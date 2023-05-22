@@ -1,3 +1,4 @@
+import math
 from copy import copy
 from kimieCarole.util.utils import timer
 import kimieCarole.util.utils as utils
@@ -10,15 +11,37 @@ class BasicCalculator:
     # @timer
     def calculator_core(self, expression):
 
-        exp = str(expression)
-        exp = exp.replace(' ', '')
+        exp = self.expression_front_formatting(str(expression))
 
-        self.expression_checking(exp)
         exp_list = self.automatic_sentence_breaking(exp)
+
+        length = len(exp_list)-1
+        i = 1
+        while i < length:
+            pattern = exp_list[i]
+            previous_pattern = exp_list[i-1]
+            next_pattern = exp_list[i+1]
+            if pattern == '-':
+                if previous_pattern == '*' or \
+                        previous_pattern == '/' or \
+                        previous_pattern == '%' or \
+                        previous_pattern == '^':
+
+                    exp_list[i+1] = str(0-float(next_pattern))
+                    exp_list[i] = ''
+                    exp_list.remove('')
+                    length = len(exp_list) - 1
+                    continue
+                pass
+            i += 1
+            pass
 
         while True:
             for i in range(0 , len(exp_list)):
                 pattern = exp_list[i]
+                if pattern == '^':
+                    exp_list[i + 1] = math.pow(float(exp_list[i-1]), float(exp_list[i + 1]))
+                    exp_list[i] = exp_list[i-1] = ''
                 if pattern == '*':
                     exp_list[i + 1] = float(exp_list[i - 1]) * float(exp_list[i + 1])
                     exp_list[i] = exp_list[i-1] = ''
@@ -77,28 +100,26 @@ class BasicCalculator:
                 i = 0
             pass
 
+        while result.__contains__(''):
+            result.remove('')
         return result
 
-    # @timer
+    def expression_front_formatting(self, expression):
+        expression = str(expression)
+        expression = expression.replace(' ', '')
+
+        if expression[0] == '-':
+            expression = '0' + expression
+        expression = expression.replace('+-', '-')
+        expression = expression.replace('--', '+')
+        return expression
+
+    @DeprecationWarning
     def expression_checking(self, expression):
         exp = str(expression)
 
         if utils.regex_list.__contains__(exp[0]) or utils.regex_list.__contains__(exp[-1]):
             raise SyntaxError
-
-        counter = 0
-        for i in exp:
-            if utils.regex_list.__contains__(i):
-                counter += 1
-                pass
-
-            if counter > 1:
-                raise SyntaxError
-
-            if utils.number_list.__contains__(i):
-                counter = 0
-                pass
-        return
 
     # @timer
     def bracket_checking(self, expression):

@@ -1,3 +1,5 @@
+import math
+
 from kimieCarole.core.BasicCalculator import BasicCalculator
 from kimieCarole.core.VariableCalculator import VariableCalculator
 from kimieCarole.util.utils import number_list, regex_list
@@ -22,7 +24,62 @@ class FunctionCalculator:
         variable_calculator = VariableCalculator()
         global calculator
         calculator = BasicCalculator()
+        self.init_bulit_in_functions()
         pass
+
+    def init_bulit_in_functions(self):
+        ABS = Function(True)
+        ABS.name = 'abs'
+        ABS.idenpendent_variables = ['x']
+        self.functions.append(ABS)
+        SIN = Function(True)
+        SIN.name = 'sin'
+        SIN.idenpendent_variables = ['x']
+        self.functions.append(SIN)
+        COS = Function(True)
+        COS.name = 'cos'
+        COS.idenpendent_variables = ['x']
+        self.functions.append(COS)
+        TAN = Function(True)
+        TAN.name = 'tan'
+        TAN.idenpendent_variables = ['x']
+        self.functions.append(TAN)
+        POW = Function(True)
+        POW.name = 'pow'
+        POW.idenpendent_variables = ['x', 'y']
+        self.functions.append(POW)
+        ASIN = Function(True)
+        ASIN.name = 'asin'
+        ASIN.idenpendent_variables = ['x']
+        self.functions.append(ASIN)
+        ACOS = Function(True)
+        ACOS.name = 'acos'
+        ACOS.idenpendent_variables = ['x']
+        self.functions.append(ACOS)
+        ATAN = Function(True)
+        ATAN.name = 'atan'
+        ATAN.idenpendent_variables = ['x']
+        self.functions.append(ATAN)
+        DEG = Function(True)
+        DEG.name = 'deg'
+        DEG.idenpendent_variables = ['x']
+        self.functions.append(DEG)
+        RAD = Function(True)
+        RAD.name = 'rad'
+        RAD.idenpendent_variables = ['x']
+        self.functions.append(RAD)
+        SINH = Function(True)
+        SINH.name = 'sinh'
+        SINH.idenpendent_variables = ['x']
+        self.functions.append(SINH)
+        COSH = Function(True)
+        COSH.name = 'cosh'
+        COSH.idenpendent_variables = ['x']
+        self.functions.append(COSH)
+        EXP = Function(True)
+        EXP.name = 'exp'
+        EXP.idenpendent_variables = ['x']
+        self.functions.append(EXP)
 
     def load_function(self, function):
         if isinstance(function, Function):
@@ -136,7 +193,7 @@ class FunctionCalculator:
             catched = self.get_function(func_name)
             if catched is None:
                 raise SyntaxError
-            expression = expression[0:func[1]] + '(' + catched.assignment(func[0]) + ')' + expression[func[2]+1:]
+            expression = expression[0:func[1]] + '(' + str(catched.assignment(func[0], self)) + ')' + expression[func[2]+1:]
             func = self.find_function(expression)
             continue
             pass
@@ -151,11 +208,12 @@ class FunctionCalculator:
         print('          ' , self.variables)
         print('functions:')
         for i in self.functions:
-            i.print(5)
+            if i.is_built_in:
+                print('     ' + i.name + '(' + str(i.idenpendent_variables).replace('\'', '').replace('[', '').replace(']', '') + ')')
+            else:
+                i.print(5)
             pass
         print('='.center(15 + len(__name__), '='))
-
-
 
 def remove_all_spaces(l):
     l = list(l)
@@ -164,15 +222,16 @@ def remove_all_spaces(l):
         pass
     return l
 
-
 class Function:
     name = ''
     body = ''
     idenpendent_variables = []
     dependent_variables = []
     parameters = []
+    is_built_in = False
 
-    def __init__(self):
+    def __init__(self, is_built_in = False):
+        self.is_built_in = is_built_in
         global name
         global body
         global idenpendent_variables
@@ -274,7 +333,7 @@ class Function:
 
         return self
 
-    def assignment(self, expression):
+    def assignment(self, expression , function_calculator):
         expression = str(expression)
 
         brackets_and_space = ['(', ')', ' ']
@@ -303,6 +362,9 @@ class Function:
             pass
 
         regexs_list.append(regexs[front:len(regexs)])
+
+        if self.is_built_in:
+            return self.built_in(function_name, function_calculator, regexs_list)
 
         if len(regexs_list) != len(self.idenpendent_variables):
             raise SyntaxError
@@ -358,6 +420,37 @@ class Function:
             pass
 
         return exp
+
+    def built_in(self, expression, function_calculator, regexs):
+        expression = str(expression)
+        regexs = [function_calculator.calculate(i) for i in regexs]
+
+        if expression == 'abs':
+            return abs(float(regexs[0]))
+        if expression == 'sin':
+            return math.sin(float(regexs[0]))
+        if expression == 'cos':
+            return math.cos(float(regexs[0]))
+        if expression == 'tan':
+            return math.tan(float(regexs[0]))
+        if expression == 'pow':
+            return math.pow(float(regexs[0]), float(regexs[0]))
+        if expression == 'asin':
+            return math.asin(float(regexs[0]))
+        if expression == 'acos':
+            return math.acos(float(regexs[0]))
+        if expression == 'atan':
+            return math.atan(float(regexs[0]))
+        if expression == 'deg':
+            return math.degrees(float(regexs[0]))
+        if expression == 'rad':
+            return math.radians(float(regexs[0]))
+        if expression == 'sinh':
+            return math.sinh(float(regexs[0]))
+        if expression == 'cosh':
+            return math.cosh(float(regexs[0]))
+        if expression == 'exp':
+            return math.exp(float(regexs[0]))
 
     def print(self , offset_len=0):
         offset = ''

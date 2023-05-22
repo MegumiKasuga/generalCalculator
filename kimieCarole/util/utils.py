@@ -1,6 +1,6 @@
 import time
 
-regex_list = ['+', '-', '*', '/', '%']
+regex_list = ['+', '-', '*', '/', '%', '^']
 number_list = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.']
 def timer(func):
     def counter(*args):
