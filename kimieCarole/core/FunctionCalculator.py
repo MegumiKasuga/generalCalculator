@@ -1,3 +1,4 @@
+from kimieCarole.core.BasicCalculator import BasicCalculator
 from kimieCarole.core.VariableCalculator import VariableCalculator
 from kimieCarole.util.utils import number_list, regex_list
 from copy import deepcopy
@@ -5,8 +6,83 @@ from copy import deepcopy
 
 class FunctionCalculator:
 
+    variables = {}
+    functions = []
+    variable_calculator = VariableCalculator()
+    calculator = BasicCalculator()
+    default_var = 0
+    _strict = False
+
     def __init__(self):
+        global variables
+        variables = {}
+        global functions
+        functions = []
+        global variable_calculator
+        variable_calculator = VariableCalculator()
+        global calculator
+        calculator = BasicCalculator()
         pass
+
+    def load_function(self, function):
+        if isinstance(function, Function):
+            self.functions.append(function)
+        else:
+            raise TypeError
+        pass
+
+    def registerate_function(self, expression):
+        expression = str(expression)
+        function = Function()
+        function.define_function(expression)
+        self.functions.append(function)
+        pass
+
+    def get_function(self, func_name):
+        for i in self.functions:
+            if i.name == func_name:
+                return i
+            pass
+        return None
+
+    def discard_function(self, func_name):
+        func = self.find_function(func_name)
+        if func is not None:
+            self.functions.remove(func)
+            pass
+        pass
+
+    def define_variables(self, expression):
+        exp_list = str(expression).split('=')
+
+        if len(exp_list) == 1:
+            return
+
+        for i in range(0, len(exp_list) - 1):
+            self.variables.update({VariableCalculator.variable_check(exp_list[i]): exp_list[len(exp_list) - 1]})
+            pass
+
+        self.variable_calculator.define_variable(expression)
+        return
+
+    def remove_variable(self, var_name):
+        if self.variables.__contains__(var_name):
+            self.variables.pop(var_name)
+            self.variable_calculator.remove_var(var_name)
+            pass
+        return
+
+    def set_default_var(self, var):
+        if not (isinstance(var, float) or isinstance(var, int)):
+            raise TypeError
+
+        self._default_var = var
+        self.variable_calculator.set_default_var(var)
+        return
+
+    def strict_mode(self, strict):
+        self._strict = strict
+        self.variable_calculator.set_strict_mode(strict)
 
     def find_function(self, expression):
         expression = str(expression)
@@ -51,6 +127,43 @@ class FunctionCalculator:
         else:
             return None
 
+    def calculate(self, expression):
+        expression = str(expression)
+
+        func = self.find_function(expression)
+        while func is not None:
+            func_name = func[0][0:func[0].find('(')]
+            catched = self.get_function(func_name)
+            if catched is None:
+                raise SyntaxError
+            expression = expression[0:func[1]] + '(' + catched.assignment(func[0]) + ')' + expression[func[2]+1:]
+            func = self.find_function(expression)
+            continue
+            pass
+
+        return self.variable_calculator.calculate(expression, self.calculator)
+
+    def print(self):
+        print(__name__.center(40,'='))
+        print('strict mode:')
+        print('          ', self._strict)
+        print('variables:')
+        print('          ' , self.variables)
+        print('functions:')
+        for i in self.functions:
+            i.print(5)
+            pass
+        print('='.center(15 + len(__name__), '='))
+
+
+
+def remove_all_spaces(l):
+    l = list(l)
+    while l.__contains__(''):
+        l.remove('')
+        pass
+    return l
+
 
 class Function:
     name = ''
@@ -70,7 +183,7 @@ class Function:
         body = ''
         idenpendent_variables = []
         dependent_variables = []
-        parameters = []
+        parameters = {}
         pass
 
     def define_function(self, expression):
@@ -139,15 +252,17 @@ class Function:
             continue
 
         parameter_list = parameter_check.split(' ')
-        for i in self.idenpendent_variables:
-            if parameter_list.__contains__(''):
-                parameter_list.remove('')
-            if parameter_list.__contains__(i):
+        for i in parameter_list:
+            if self.idenpendent_variables.__contains__(i):
                 parameter_list.remove(i)
                 pass
             pass
 
-        self.parameters = parameter_list
+        while parameter_list.__contains__(''):
+            parameter_list.remove('')
+            pass
+
+        self.parameters = dict.fromkeys(parameter_list, 0)
 
         if left_side > 0:
             for i in range(0, len(exp_list) - 2):
@@ -155,8 +270,6 @@ class Function:
                 pass
             pass
 
-        self.bubbleSorting(self.idenpendent_variables)
-        self.bubbleSorting(self.parameters)
         self.bubbleSorting(self.dependent_variables)
 
         return self
@@ -195,10 +308,20 @@ class Function:
             raise SyntaxError
 
         exp = deepcopy(self.body)
-        left = right = -1
+        variables = self.bubbleSorting(self.idenpendent_variables + list(self.parameters.keys()))
+
+        assigment_list = []
+        for i in variables:
+            if self.idenpendent_variables.__contains__(i):
+                assigment_list.append(str(regexs_list[self.idenpendent_variables.index(i)]))
+            else:
+                assigment_list.append(str(self.parameters.get(i)))
+                pass
+            pass
+
         offset = 0
-        for xi in range(0, len(self.idenpendent_variables)):
-            i = self.idenpendent_variables[xi]
+        for xi in range(0, len(variables)):
+            i = variables[xi]
             pointer = exp.find(i, offset)
             while pointer != -1:
 
@@ -215,19 +338,17 @@ class Function:
                 if pointer == len(exp) - len(i):
                     right = pointer
                     if number_list.__contains__(exp[pointer - 1]):
-                        exp = exp[0: left] + '*' + regexs_list[xi] + exp[right: len(exp)]
+                        exp = exp[0: left] + '*' + assigment_list[xi] + exp[right: len(exp)]
                     else:
-                        exp = exp[0:left] + regexs_list[xi]
-                    right = left = -1
+                        exp = exp[0:left] + assigment_list[xi]
                     break
                 elif regex_list.__contains__(exp[pointer + len(i)]) or number_list.__contains__(
                         exp[pointer + len(i)]) or brackets_and_space.__contains__(exp[pointer + len(i)]):
                     right = pointer + len(i)
                     if number_list.__contains__(exp[pointer - 1]):
-                        exp = exp[0: left] + '*' + regexs_list[xi] + exp[right: len(exp)]
+                        exp = exp[0: left] + '*' + assigment_list[xi] + exp[right: len(exp)]
                     else:
-                        exp = exp[0: left] + regexs_list[xi] + exp[right: len(exp)]
-                    right = left = -1
+                        exp = exp[0: left] + assigment_list[xi] + exp[right: len(exp)]
                     break
                 else:
                     offset += pointer
@@ -238,39 +359,58 @@ class Function:
 
         return exp
 
-    def print(self):
-        print(('<Function ' + self.name + '>').center(30, '='))
-        print('indenpent vars:')
-        print('          ', self.idenpendent_variables)
+    def print(self , offset_len=0):
+        offset = ''
+        for i in range(offset_len):
+            offset += ' '
+            pass
+
+        print(offset+(('<Function ' + self.name + '>').center(30, '=')))
+        print(offset + 'indenpent vars:')
+        print(offset + '          ', self.idenpendent_variables)
         if len(self.dependent_variables) > 0:
-            print('dependent vars:')
-            print('          ', self.dependent_variables)
+            print(offset + 'dependent vars:')
+            print(offset + '          ', self.dependent_variables)
             pass
         else:
-            print('no dependent var')
+            print(offset + '--no dependent var--')
             pass
         if len(self.parameters) > 0:
-            print('parameters:')
-            print('          ', self.parameters)
+            print(offset + 'parameters:')
+            print(offset + '          ', self.parameters)
             pass
         else:
-            print('no parameter')
-        print('expression:')
-        print(self.name + str(tuple(self.idenpendent_variables)).replace(',)', ')').replace('\'', '') + '=' + self.body)
+            print(offset + '--no parameter--')
+        print(offset + 'expression:')
+        print(offset + self.name + str(tuple(self.idenpendent_variables)).replace(',)', ')').replace('\'', '') + '=' + self.body)
+
+        print(offset + ''.center(18+len('<Function ' + self.name + '>'), '='))
 
     def bubbleSorting(self, regexs):
         last_regexs = []
 
-        while last_regexs != regexs:
-            last_regexs = deepcopy(regexs)
-            for i in range(0, len(regexs) - 1):
-                if len(regexs[i]) < len(regexs[i + 1]):
-                    cache = regexs[i]
-                    regexs[i] = regexs[i + 1]
-                    regexs[i + 1] = cache
+        regexs_keys = regexs if isinstance(regexs, list) else remove_all_spaces(list(regexs.keys()))
+
+        while last_regexs != regexs_keys:
+            last_regexs = deepcopy(regexs_keys)
+            for i in range(0, len(regexs_keys) - 1):
+                if len(regexs_keys[i]) < len(regexs_keys[i + 1]):
+                    cache = regexs_keys[i]
+                    regexs_keys[i] = regexs_keys[i + 1]
+                    regexs_keys[i + 1] = cache
                     continue
                     pass
                 pass
             pass
 
-        return regexs
+        if isinstance(regexs, list):
+            regexs = regexs_keys
+            return regexs
+        else:
+            result = dict.fromkeys(regexs_keys , '0')
+            for i in regexs_keys:
+                result.__setitem__(i, regexs.get(i))
+            regexs = result
+            return regexs
+        pass
+

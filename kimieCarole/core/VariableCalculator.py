@@ -27,9 +27,11 @@ class VariableCalculator:
             self._var_dict.update({self.variable_check(exp_list[i]): exp_list[len(exp_list) - 1]})
             pass
 
-        print(_var_dict)
-
         return
+
+    def variable_inheritance(self, var_dict):
+        self._var_dict.update(var_dict)
+        pass
 
     # @timer
     @staticmethod
@@ -48,21 +50,27 @@ class VariableCalculator:
             pass
         return expression
 
-    @timer
+    # @timer
     def set_default_var(self, variable):
 
         if not (isinstance(variable, float) or isinstance(variable, int)):
             raise TypeError
 
-        global _default_var
-        _default_var = variable
+        self._default_var = variable
         return
 
-    @timer
+    def remove_var(self, var_name):
+        if self.variables.__contains__(var_name):
+            self.variables.pop(var_name)
+            pass
+        pass
+
+
+    # @timer
     def set_strict_mode(self, isStrict):
         self._strict = isStrict
 
-    @timer
+    # @timer
     def find_variable(self, expression):
 
         if not isinstance(expression, str):
@@ -104,7 +112,7 @@ class VariableCalculator:
         if front == back == -1:
             return None
 
-    @timer
+    # @timer
     def assignment(self, expression):
         expression = str(expression)
 
@@ -141,7 +149,7 @@ class VariableCalculator:
 
         return expression
 
-    @timer
+    # @timer
     def calculate(self, expression , calculator):
         expression = str(expression)
         expression = self.assignment(expression)
