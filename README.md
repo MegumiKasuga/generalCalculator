@@ -13,6 +13,7 @@
 
   ###### 变量定义
   `functionCalculator.define_variables('b=c=2.0')`
+  
   `functionCalculator.define_variables('a=4.0')`
 
   ###### 打印函数信息
