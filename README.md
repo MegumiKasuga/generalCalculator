@@ -2,7 +2,7 @@
 - 一个通用函数计算器
 - 输入一个函数、代数式进行计算，获得一个返回值
 
-#### How to use
+## How to use
   
   ##### 导入库
   `from core.FunctionCalculator import FunctionCalculator`
