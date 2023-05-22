@@ -3,7 +3,7 @@
 
 #### How to use
 `
-  from core.FunctionCalculator import FunctionCalculator # 导入库
+  `from core.FunctionCalculator import FunctionCalculator # 导入库`
 
   # 计算器的定义和启动
   functionCalculator = FunctionCalculator()
